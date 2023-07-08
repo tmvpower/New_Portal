@@ -1,0 +1,32 @@
+{% extends 'flatpages/default.html'%}
+
+{% block title %}
+News
+{% endblock title %}
+
+{% block content %}
+    <h1> Все новости: {{ time_now|date: 'M d Y' }}</h1>
+    <h2> Количество новостей: {{ news|length}}</h2>
+    <hr>
+    {% if products %}
+        <table>
+            <tr>
+                <td>Название статьи</td>
+                <td>Категория</td>
+                <td>Дата публикации</td>
+                <td>Текст</td>
+            </tr>
+            {% for 1one in news|dictsortreversed:'date_published' %}
+            <tr>
+                <td>{{ news.name }}</td>
+                <td>{{ news.category.name|trancatechars:10 }}</td>
+                <td>{{ news.date_published'}}</td>
+                <td>{{ news.description|trancatewords:20 }}</td>
+
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <h3>Товаров нету!</h3>
+    {% endif %}
+{% endblock content %}
