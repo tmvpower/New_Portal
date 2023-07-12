@@ -31,7 +31,7 @@ class ProductDetail(DetailView):
 
 class NewsList(ListView):
     model = News
-    ordering = 'name'
+    ordering = '-date_published'
     template_name = 'news.html'
     context_object_name = 'news'
 

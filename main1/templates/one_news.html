@@ -4,8 +4,7 @@
 News
 {% endblock title %}
 
+
 {% block content %}
-    <h1>{{ one_news.name }}</h1>
-    <p>Дата публикации: {{ one_news.date_published|date: 'M d Y'}}</p>
-    <p>{{ one_news.description }}</p>
+<h1> {{ one_news }}</h1>
 {% endblock content %}

@@ -5,28 +5,25 @@ News
 {% endblock title %}
 
 {% block content %}
-    <h1> Все новости: {{ time_now|date: 'M d Y' }}</h1>
-    <h2> Количество новостей: {{ news|length}}</h2>
+    <h1>Все новости</h1>
     <hr>
-    {% if products %}
+    {% if news %}
         <table>
             <tr>
-                <td>Название статьи</td>
-                <td>Категория</td>
+                <td>Заголовок</td>
                 <td>Дата публикации</td>
                 <td>Текст</td>
+
             </tr>
-            {% for 1one in news|dictsortreversed:'date_published' %}
+            {% for one_news in news %}
             <tr>
                 <td>{{ news.name }}</td>
-                <td>{{ news.category.name|trancatechars:10 }}</td>
-                <td>{{ news.date_published'}}</td>
-                <td>{{ news.description|trancatewords:20 }}</td>
-
+                <td>{{ news.date_published|date:'M d Y' }}</td>
+                <td>{{ news.text|trancatechars:20}}</td>
             </tr>
             {% endfor %}
         </table>
     {% else %}
-        <h3>Товаров нету!</h3>
+        <h2>Новостей нету</h2>
     {% endif %}
 {% endblock content %}

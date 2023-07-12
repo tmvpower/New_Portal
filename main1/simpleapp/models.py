@@ -1,5 +1,7 @@
-from django.db import models
+from datetime import datetime
+
 from django.core.validators import MinValueValidator
+from django.db import models
 
 
 # Товар для нашей витрины
@@ -34,11 +36,11 @@ class Category(models.Model):
     def __str__(self):
         return self.name.title()
 
+
 class News(models.Model):
     name = models.CharField(max_length=50, unique=True)
-    description = models.TextField()
-    category = models.CharField(max_length=50)
-    date_published = models.DateTimeField(auto_now_add=True)
+    text = models.TextField()
+    date_published = models.DateTimeField(default=datetime.now)
 
     def __str__(self):
-        return f'{self.name.title}: {self.description}'
+        return f'{self.name.title()} {self.text()}'
