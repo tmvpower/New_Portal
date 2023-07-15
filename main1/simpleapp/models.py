@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.urls import reverse
 
 
 # Товар для нашей витрины
@@ -34,13 +35,19 @@ class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
-        return self.name.title()
+        return self.name
 
 
 class News(models.Model):
     name = models.CharField(max_length=50, unique=True)
     text = models.TextField()
     date_published = models.DateTimeField(default=datetime.now)
+    autor = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
-        return f'{self.name.title()} {self.text()}'
+        return f'{self.name} {self.text}'
+
+    def get_absolute_url(self):
+        return reverse('product_detail', args=[str(self.id)])
+
+

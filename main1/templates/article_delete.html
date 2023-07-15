@@ -1,0 +1,10 @@
+{% extends 'default.html' %}
+
+{% block content %}
+    <h2>Вы уверены, что хотите удалить эту статью?</h2>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Удалить</button>
+        <a href="{% url 'article_list' %}">Отмена</a>
+    </form>
+{% endblock %}

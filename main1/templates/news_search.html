@@ -1,0 +1,20 @@
+{% extends 'default.html' %}
+
+{% block content %}
+    <h1>Search News</h1>
+
+    <form action="{% url 'news_search' %}" method="get">
+        <input type="submit" value="Найти">
+    </form>
+
+    {% if news_results %}
+        <h2>Поиск новостей:</h2>
+        <ul>
+            {% for news in news_results %}
+                <li>{{ news.name }} - {{ news.author }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Нет результатов поиска.</p>
+    {% endif %}
+{% endblock %}
