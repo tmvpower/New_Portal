@@ -1,9 +1,10 @@
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views import View
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 
-from .filters import ProductFilter
+from .filters import ProductFilter, NewsFilter
 from .forms import ProductForm, NewsForm, ArticleForm
 from .models import Product, News
 
@@ -19,7 +20,7 @@ class ProductsList(ListView):
     # Это имя списка, в котором будут лежать все объекты.
     # Его надо указать, чтобы обратиться к списку объектов в html-шаблоне.
     context_object_name = 'products'
-    paginate_by = 2
+    paginate_by = 5
 
     def __init__(self, **kwargs):
         super().__init__(kwargs)
@@ -43,6 +44,7 @@ class ProductsList(ListView):
         context['filterset'] = self.filterset
         return context
 
+
 class ProductDetail(DetailView):
     # Модель всё та же, но мы хотим получать информацию по отдельному товару
     model = Product
@@ -50,6 +52,7 @@ class ProductDetail(DetailView):
     template_name = 'product.html'
     # Название объекта, в котором будет выбранный пользователем продукт
     context_object_name = 'product'
+
 
 # Добавляем новое представление для создания товаров.
 class ProductCreate(CreateView):
@@ -82,33 +85,30 @@ class NewsList(ListView):
     paginate_by = 10
     page_range = 5
 
+
 class NewsDetail(DetailView):
     model = News
     template_name = 'one_news.html'
     context_object_name = 'one_news'
 
+
 class NewsSearch(View):
     def get(self, request):
-        name = request.GET.get('name')
-        author = request.GET.get('author')
-        date = request.GET.get('date')
-
-        news_results = News.objects.filter(name__icontains=name, author__icontains=author, date__gt=date)
-
+        # Используйте класс NewsFilter для фильтрации
+        news_filter = NewsFilter(request.GET, queryset=News.objects.all())
         context = {
-            'name': name,
-            'author': author,
-            'date': date,
-            'news_results': news_results
+            'news_filter': news_filter
         }
-
         return render(request, 'news_search.html', context)
 
-class NewsCreate(CreateView):
+
+class NewsCreate(PermissionRequiredMixin, CreateView):
     model = News
     form_class = NewsForm
     template_name = 'news_edit.html'
     success_url = reverse_lazy('news_list')
+    permission_required = ('simpleapp.add_news')
+
 
     def form_valid(self, form):
         news = form.save(commit=False)
@@ -117,23 +117,27 @@ class NewsCreate(CreateView):
         return super().form_valid(form)
 
 
-class NewsUpdate(UpdateView):
+class NewsUpdate(PermissionRequiredMixin, UpdateView):
     model = News
     template_name = 'news_edit.html'
     fields = ['name', 'author', 'content', 'date_published']
     success_url = reverse_lazy('news_list')
+    permission_required = ('simpleapp.change_news')
 
 
-class NewsDelete(DeleteView):
+class NewsDelete(PermissionRequiredMixin, DeleteView):
     model = News
     template_name = 'news_delete.html'
     success_url = reverse_lazy('news_list')
+    permission_required = ('simpleapp.delete_news')
 
-class ArticleCreate(CreateView):
+
+class ArticleCreate(PermissionRequiredMixin, CreateView):
     model = News
     form_class = ArticleForm
     template_name = 'article_edit.html'
     success_url = reverse_lazy('article_list')
+    permission_required = ('simpleapp.add_news')
 
     def form_valid(self, form):
         article = form.save(commit=False)
@@ -142,14 +146,24 @@ class ArticleCreate(CreateView):
         return super().form_valid(form)
 
 
-class ArticleUpdate(UpdateView):
+class ArticleUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = News
     template_name = 'article_edit.html'
     fields = ['name', 'author', 'content', 'date_published']
     success_url = reverse_lazy('article_list')
+    login_url = reverse_lazy('login')
+    permission_required = ('simpleapp.change_news')
 
 
-class ArticleDelete(DeleteView):
+
+class ArticleDelete(PermissionRequiredMixin, DeleteView):
     model = News
     template_name = 'article_delete.html'
     success_url = reverse_lazy('article_list')
+    permission_required = ('simpleapp.delete_news')
+
+
+class ProtectedView(LoginRequiredMixin, TemplateView):
+    template_name = 'protected_page.html'
+
+
