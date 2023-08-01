@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.urls import reverse
@@ -34,7 +35,7 @@ class Product(models.Model):
 class Category(models.Model):
     # названия категорий тоже не должны повторяться
     name = models.CharField(max_length=100, unique=True)
-
+    subscribers = models.ManyToManyField(User, related_name='subscribers_categories', blank=True)
     def __str__(self):
         return self.name
 
@@ -53,6 +54,12 @@ class News(models.Model):
 
     def __str__(self):
         return f'{self.name} {self.text}'
+
+    def send_update_email(self):
+        subject = f'Обновление в категории: {self.category.name}'
+        message = f'{self.name}\n\n{self.text[:50]}'
+        subscribers_emails = self.category.subscribers.values_list('email', flat=True)
+        send_mail(subject, message, 'noreply@example.com', list(subscribers_emails), fail_silently=True)
 
     @property
     def get_absolute_url(self):
@@ -126,3 +133,5 @@ class Comment(models.Model):
     def dislike(self):
         self.rating -= 1
         self.save()
+
+

@@ -1,5 +1,11 @@
+from datetime import datetime, timedelta
+
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.shortcuts import render
+from django.contrib.auth.models import User
+from django.core.mail import send_mail, EmailMultiAlternatives, mail_admins
+from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
@@ -76,7 +82,32 @@ class ProductDelete(DeleteView):
     template_name = 'product_delete.html'
     success_url = reverse_lazy('product_list')
 
+@login_required
+def send_weekly_newsletter():
+    # Отправляем рассылку только тем пользователям, которые подписаны на какие-либо категории
+    subscribed_users = User.objects.filter(category__isnull=False).distinct()
 
+    # Получаем текущую дату и дату недели назад
+    today = datetime.today().date()
+    one_week_ago = today - timedelta(weeks=1)
+
+    for user in subscribed_users:
+        # Получаем все статьи, добавленные за последнюю неделю в разделах, на которые подписан пользователь
+        new_articles = News.objects.filter(author__category__subscribers=user, date_published__date__gte=one_week_ago)
+
+        # Формируем содержание письма
+        message = ''
+        for article in new_articles:
+            message += f'{article.title}: {article.content[:50]}\n'
+
+        # Отправляем письмо пользователю с новыми статьями
+        send_mail(
+            'Weekly Newsletter',
+            message,
+            'noreply@yourdomain.com',  # Укажите здесь ваш адрес электронной почты
+            [user.email],
+            fail_silently=False,
+        )
 class NewsList(ListView):
     model = News
     ordering = '-date_published'
@@ -166,4 +197,61 @@ class ArticleDelete(PermissionRequiredMixin, DeleteView):
 class ProtectedView(LoginRequiredMixin, TemplateView):
     template_name = 'protected_page.html'
 
+
+
+def create_news(request):
+    if request.method == 'POST':
+        form = NewsForm(request.POST)
+        if form.is_valid():
+            news = form.save(commit=False)
+            news.save()
+            # Отправляем обновление всем подписчикам данной категории
+            news.send_update_email()
+            return redirect('news_list')
+    else:
+        form = NewsForm()
+    return render(request, 'create_news.html', {'form': form})
+
+
+@login_required
+def subscribe_category(request, category_id):
+    category = get_object_or_404('Category', pk=category_id)
+    user = request.user
+
+    if user in category.subscribers.all():
+        category.subscribers.remove(user)
+    else:
+        category.subscribers.add(user)
+
+    return redirect('category_news', category_id=category_id)
+
+def create_news(request):
+    if request.method == 'POST':
+        user = request.user
+        # Проверяем, сколько новостей уже опубликовано пользователем за сутки
+        news_count_today = News.objects.filter(author=user, date_published__date=datetime.today()).count()
+        if news_count_today >= 3:
+            return render(request, 'error.html', {'message': 'You have reached the limit of news publications for today.'})
+
+        form = NewsForm(request.POST)
+        if form.is_valid():
+            news = form.save(commit=False)
+            news.author = request.user
+            news.save()
+
+            # Отправляем уведомления подписчикам категории
+            subscribers = news.category.subscribers.all()
+            for subscriber in subscribers:
+                mail_admins(
+                    subject=f'New article in {news.category.name}',
+                    message=f'{news.title}: {news.content[:50]}',
+                    recipient_list=[subscriber.email],
+                )
+
+            return redirect('news_detail', pk=news.pk)
+
+    else:
+        form = NewsForm()
+
+    return render(request, 'create_news.html', {'form': form})
 

@@ -1,0 +1,18 @@
+<h1>Здравствуй, {{ username }}. Новая статья в твоём любимом разделе!</h1>
+<hr>
+{% for category in categories %}
+    <h2>{{ category.name }}</h2>
+    {% for news in category.news_set.all %}
+        <div>
+            <h3>{{ news.title }}</h3>
+            <p>{{ news.content|safe|truncatechars:50 }}</p>
+        </div>
+    {% endfor %}
+    <a href="{% url 'subscribe_category' category.id %}">
+        {% if user in category.subscribers.all %}
+            Отписаться
+        {% else %}
+            Подписаться
+        {% endif %}
+    </a>
+{% endfor %}
